@@ -14,7 +14,7 @@ def registration(login, password):
     if auth(login, password):
         return "Вы уже зарегистрированы "
     data[login] = password
-    save_data()
+    save_data(login, password)
 
 
 def save_data(login, password):
@@ -22,13 +22,13 @@ def save_data(login, password):
         writer = csv.writer(file)
         writer.writerow([login, password])
 
-filename = 'users.txt'
+filename = 'users.csv'
 
 
-f = open(filename, newline='', encoding='utf-8')
-reader = csv.reader(f)
-data = {rows[0]: rows[1] for rows in reader}
-f.close()
+with open(filename, newline='', encoding='utf-8')as f:
+    reader = csv.reader(f)
+    data = {rows[0]: rows[1] for rows in reader}
+
 
 
 
@@ -52,5 +52,5 @@ while True:
         registration(login, password)
     if decidion == 0:
         break
-    else:
-        print("Некорректный ввод")
+    print(data)
+
