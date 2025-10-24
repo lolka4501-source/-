@@ -1,3 +1,5 @@
+import csv
+
 def auth(login, password):
     global data
     if data.get(login) == None:
@@ -9,12 +11,29 @@ def auth(login, password):
 
 def registration(login, password):
     global data
+    if auth(login, password):
+        return "Вы уже зарегистрированы "
     data[login] = password
+    save_data()
 
-data = dict()
+
+def save_data(login, password):
+    with open(filename, 'a', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow([login, password])
+
+filename = 'users.txt'
+
+
+f = open(filename, newline='', encoding='utf-8')
+reader = csv.reader(f)
+data = {rows[0]: rows[1] for rows in reader}
+f.close()
+
+
 
 while True:
-    print("Желаете войти или зарегистрировать?(1/2)")
+    print("Желаете войти или зарегистрировать?(1/2)\nдля завершения работы выберите 0")
     decidion = int(input())
     if decidion == 1:
         login = input("Login: ")
@@ -31,3 +50,7 @@ while True:
         login = input("Login: ")
         password = input("Password: ")
         registration(login, password)
+    if decidion == 0:
+        break
+    else:
+        print("Некорректный ввод")
