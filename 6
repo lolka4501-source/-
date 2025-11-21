@@ -1,0 +1,137 @@
+import numpy as np
+
+# Устанавливаем seed для воспроизводимости (опционально)
+np.random.seed(42)
+
+# ---------- ЗАДАНИЕ 1: Решение СЛАУ методом Крамера ----------
+def solve_cramer(A, b):
+    """
+    Решает систему Ax = b методом Крамера.
+    A — квадратная матрица (n×n), b — вектор (n,)
+    Возвращает вектор x.
+    """
+    n = A.shape[0]
+    det_A = np.linalg.det(A)
+    
+    if abs(det_A) < 1e-12:
+        raise ValueError("Матрица вырожденная: определитель ≈ 0 → система не имеет единственного решения.")
+    
+    x = np.zeros(n)
+    for i in range(n):
+        # Заменяем i-й столбец A на вектор b
+        A_i = A.copy()
+        A_i[:, i] = b
+        det_i = np.linalg.det(A_i)
+        x[i] = det_i / det_A
+    return x
+
+# Пример использования (можно заменить на ввод с клавиатуры):
+n = 3
+A = np.random.randint(-5, 6, size=(n, n)).astype(float)
+b = np.random.randint(-10, 11, size=n).astype(float)
+
+print("=== ЗАДАНИЕ 1: Метод Крамера ===")
+print("Матрица A:\n", A)
+print("Вектор b:", b)
+
+try:
+    x_cramer = solve_cramer(A, b)
+    print("Решение (Крамер):", x_cramer)
+    
+    # Проверка с помощью np.linalg.solve
+    x_builtin = np.linalg.solve(A, b)
+    print("Решение (встроенная функция):", x_builtin)
+    print("Разница:", np.linalg.norm(x_cramer - x_builtin))
+except ValueError as e:
+    print("Ошибка:", e)
+    # Попробуем с другой матрицей
+    A = np.array([[2, -1, 0],
+                  [1, 3, -2],
+                  [0, 4, 1]], dtype=float)
+    b = np.array([1, 5, 2], dtype=float)
+    print("\nПовтор с заведомо невырожденной матрицей:")
+    print("A:\n", A)
+    print("b:", b)
+    x_cramer = solve_cramer(A, b)
+    x_builtin = np.linalg.solve(A, b)
+    print("Крамер:", x_cramer)
+    print("Встроенная:", x_builtin)
+    print("Ошибка (L2):", np.linalg.norm(x_cramer - x_builtin))
+
+print("\n" + "="*50 + "\n")
+
+
+# ---------- ЗАДАНИЕ 2: Матричное уравнение через ОБРАТНУЮ матрицу ----------
+# Реализуем свою функцию для обратной матрицы (через алгебраические дополнения)
+
+def cofactor_matrix(A):
+    """Возвращает матрицу алгебраических дополнений (cofactor matrix)"""
+    n = A.shape[0]
+    C = np.zeros_like(A)
+    for i in range(n):
+        for j in range(n):
+            # Минор M_ij — определитель матрицы без i-й строки и j-го столбца
+            minor = np.delete(np.delete(A, i, axis=0), j, axis=1)
+            C[i, j] = ((-1) ** (i + j)) * np.linalg.det(minor)
+    return C
+
+def inverse_matrix(A):
+    """Возвращает обратную матрицу A^{-1}, используя союзную матрицу"""
+    det = np.linalg.det(A)
+    if abs(det) < 1e-12:
+        raise ValueError("Матрица вырожденная — обратная не существует.")
+    # Союзная матрица = транспонированная матрица алгебраических дополнений
+    adjugate = cofactor_matrix(A).T
+    return adjugate / det
+
+# Выбор варианта (по условию: 1 — AX = B, 2 — XA = B, 3 — AXC = B)
+# Пусть выберем ВАРИАНТ 1: AX = B  →  X = A^{-1} B
+variant = 1
+
+print("=== ЗАДАНИЕ 2: Матричное уравнение ===")
+print(f"Вариант: {variant} (AX = B)")
+
+# Генерируем данные
+n, m = 3, 4  # A: 3×3, X: 3×4, B: 3×4
+A = np.random.randint(-3, 4, size=(n, n)).astype(float)
+while abs(np.linalg.det(A)) < 1e-6:  # Убедимся, что невырожденная
+    A = np.random.randint(-3, 4, size=(n, n)).astype(float)
+
+X_true = np.random.randint(-5, 6, size=(n, m)).astype(float)
+B = A @ X_true  # По определению — точное уравнение
+
+print("Матрица A:\n", A)
+print("Матрица B:\n", B)
+
+try:
+    A_inv = inverse_matrix(A)
+    X_calc = A_inv @ B
+    print("\nОбратная матрица A^{-1} (вручную):\n", A_inv)
+    
+    # Проверка: A @ A^{-1}
+    eye_check = A @ A_inv
+    print("\nПроверка: A * A^{-1} =\n", eye_check)
+    
+    print("\nНайденное X (вручную):\n", X_calc)
+    print("Истинное X (для проверки):\n", X_true)
+    print("Ошибка (Frobenius norm):", np.linalg.norm(X_calc - X_true))
+    
+    # Сравнение с встроенной обратной матрицей
+    A_inv_builtin = np.linalg.inv(A)
+    X_builtin = A_inv_builtin @ B
+    print("\nX (через np.linalg.inv):", X_builtin)
+    print("Разница между решениями:", np.linalg.norm(X_calc - X_builtin))
+    
+except ValueError as e:
+    print("Ошибка:", e)
+
+# Для полноты — покажем, как решить другие варианты (комментарии):
+"""
+Вариант 2 (XA = B) → X = B A^{-1}
+    if variant == 2:
+        X_calc = B @ inverse_matrix(A)
+
+Вариант 3 (A X C = B) → X = A^{-1} B C^{-1}
+    C = ... (должна быть квадратной и невырожденной)
+    X_calc = inverse_matrix(A) @ B @ inverse_matrix(C)
+"""
